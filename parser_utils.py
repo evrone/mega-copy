@@ -43,6 +43,10 @@ def serialize_dc(obj, *args):
         return copy.deepcopy(obj)
 
 
+def node_class(name):
+    return getattr(__import__("libcst"), name)
+
+
 def unserialize_dc(s, k=None):
     from libcst import MaybeSentinel
     if s == "MaybeSentinel.DEFAULT":
@@ -56,7 +60,7 @@ def unserialize_dc(s, k=None):
         return tuple([unserialize_dc(x) for x in list(s)])
     if type(s) != dict or not 'type' in s:
         return s
-    args = {"type" if k == "typeparam" else k: unserialize_dc(v, k) for k, v in s.items() if k != "type"}
+    args = {"type" if k == "type_param" else k: unserialize_dc(v, k) for k, v in s.items() if k != "type"}
     klass = node_class(s['type'])
     try:
         return klass(**args)

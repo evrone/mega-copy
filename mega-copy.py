@@ -2,8 +2,8 @@ import re
 import json
 from pygments import highlight, lexers, formatters
 import sys
-from fs_utils import _run, read_file
-from parser_utils import serialize_dc
+from fs_utils import _run, read_file, write_file
+from parser_utils import serialize_dc, unserialize_dc
 from termcolor import cprint, colored
 import glob
 import libcst
@@ -101,19 +101,44 @@ if __name__ == "__main__":
             serialized = serialize_dc(m)
             walktree(serialized, f)
         jprint(data)
-    if action == "replace":
-        data = defaultdict(int)
+    if action == "copy":
 
         def f(node, path):
             if type(node) == str:
                 for s in re.findall(regexp, node, re.I):
-                    print(path)
-                    data[s] += 1
+                    paths.add(tuple(path))
             return node
 
         for filename in files:
+            paths = set([])
             print("Reading", colored(filename, "green"))
-            m = libcst.parse_module(read_file(filename))
-            serialized = serialize_dc(m)
-            walktree(serialized, f)
-        jprint(data)
+            code = read_file(filename)
+            m = libcst.parse_module(code)
+            tree = serialize_dc(m)
+            walktree(tree, f)
+            correct_paths = set([])
+
+            def is_correct_position(path, i):
+                try:
+                    v1, t1 = path[-1 * (i + 1)]
+                    v2, t2 = path[-1 * (i + 1) - 1]
+                except IndexError:
+                    return False
+                print(t1, t2)
+                if t1 == "<class 'list'>" and t2 in ["Module", "Dict"]:
+                    return True
+
+            for path in paths:
+                for i in range(len(path) - 1):
+                    if is_correct_position(path, i):
+                        correct_paths.add(tuple([x[0] for x in path]))
+                        break
+            correct_paths = sorted(correct_paths, key=len)
+            jprint(correct_paths)
+            new_tree = walktree(tree, lambda n, p: n)
+            u = unserialize_dc(new_tree)
+            if len(u.code) == len(code):
+                cprint("Yes", "grey")
+            else:
+                cprint("No", "yellow")
+            # write_file(filename, u.code)
