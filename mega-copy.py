@@ -1,5 +1,6 @@
 import re
 import json
+import copy
 from pygments import highlight, lexers, formatters
 import sys
 from fs_utils import _run, read_file, write_file
@@ -47,6 +48,35 @@ def walktree(node, f, path=None):
         return t(result)
     else:
         return f(node, path)
+
+
+def copy_at_paths(tree, paths_to_visit):
+    def walktree2(node, c, path=None):
+        if path is None:
+            path = []
+        t = type(node)
+        if t == dict:
+            result = {}
+            for k, v in node.items():
+                result[k] = walktree2(v, c, path + [(k, node.get("type"))])
+            return result
+        elif t in [list, tuple, set]:
+            result = []
+            for i, x in enumerate(node):
+                element_path = path + [(i, str(t))]
+                content = c(walktree2(x, c, element_path), element_path)
+                result.extend(content)
+            return t(result)
+        else:
+            return node
+
+    def c(node, path):
+        path2 = [p[0] for p in path]
+        if path2 in paths_to_visit:
+            return [node, node]
+        else:
+            return [node]
+    return walktree2(tree, c)
 
 
 results = []
@@ -124,21 +154,26 @@ if __name__ == "__main__":
                     v2, t2 = path[-1 * (i + 1) - 1]
                 except IndexError:
                     return False
-                print(t1, t2)
-                if t1 == "<class 'list'>" and t2 in ["Module", "Dict"]:
+                #print(t1, t2)
+                if t1 == "<class 'list'>" and t2 in ["Module", "List"]:
                     return True
 
             for path in paths:
                 for i in range(len(path) - 1):
                     if is_correct_position(path, i):
-                        correct_paths.add(tuple([x[0] for x in path]))
+                        correct_paths.add(tuple([x[0] for x in path[:-i]]))
                         break
-            correct_paths = sorted(correct_paths, key=len)
-            jprint(correct_paths)
-            new_tree = walktree(tree, lambda n, p: n)
-            u = unserialize_dc(new_tree)
-            if len(u.code) == len(code):
-                cprint("Yes", "grey")
-            else:
-                cprint("No", "yellow")
-            # write_file(filename, u.code)
+            correct_paths = sorted([list(p) for p in correct_paths], key=len)
+            for i in range(len(correct_paths)):
+                for j in range(i + 1, len(correct_paths)):
+                    if all(map(lambda a, b: a == b, correct_paths[i], correct_paths[j][:len(correct_paths[i])])):
+                        print('Eliminate')
+            #jprint(correct_paths)
+            if correct_paths:
+                new_tree = copy_at_paths(tree, correct_paths)
+                u = unserialize_dc(new_tree)
+                if len(u.code) == len(code):
+                    cprint("The same", "grey")
+                else:
+                    cprint("Different", "yellow")
+                    write_file(filename, u.code)
