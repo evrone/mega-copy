@@ -12,7 +12,9 @@ from collections import defaultdict
 
 def jprint(d):
     formatted_json = json.dumps(d, indent=4, default=repr)
-    colorful_json = highlight(formatted_json, lexers.JsonLexer(), formatters.TerminalFormatter())
+    colorful_json = highlight(
+        formatted_json, lexers.JsonLexer(), formatters.TerminalFormatter()
+    )
     print(colorful_json)
 
 
@@ -29,19 +31,22 @@ def generate_variants(source, replacement):
     pass
 
 
-def walktree(node, f):
-    if type(node) == dict:
+def walktree(node, f, path=None):
+    if path is None:
+        path = []
+    t = type(node)
+    if t == dict:
         result = {}
         for k, v in node.items():
-            result[k] = walktree(v, f)
+            result[k] = walktree(v, f, path + [(k, node.get("type"))])
         return result
-    elif type(node) in [list, tuple, set]:
+    elif t in [list, tuple, set]:
         result = []
-        for x in node:
-            result.append(walktree(x, f))
-        return type(node)(result)
+        for i, x in enumerate(node):
+            result.append(walktree(x, f, path + [(i, str(t))]))
+        return t(result)
     else:
-        return f(node)
+        return f(node, path)
 
 
 results = []
@@ -63,19 +68,52 @@ if __name__ == "__main__":
         variants.append(r"[ \-\_]?".join(parts))
     regexp = f"({'|'.join(variants)})"
     re.compile(regexp)
-    def f(node):
-        if type(node) == str:
-            for s in re.findall(regexp, node, re.I):
-                print(s)
-                data[s] += 1
-        return node
     print("The regexp", regexp)
     if action == "list":
         data = defaultdict(int)
+
+        def f(node, *args, **kwargs):
+            if type(node) == str:
+                for s in re.findall(regexp, node, re.I):
+                    print(s)
+                    data[s] += 1
+            return node
+
         for filename in files:
             print("Reading", colored(filename, "green"))
             m = libcst.parse_module(read_file(filename))
             serialized = serialize_dc(m)
-            if action == "list":
-                walktree(serialized, f)
+            walktree(serialized, f)
+        jprint(data)
+    if action == "list_paths":
+        data = defaultdict(int)
+
+        def f(node, path):
+            if type(node) == str:
+                for s in re.findall(regexp, node, re.I):
+                    print(path)
+                    data[s] += 1
+            return node
+
+        for filename in files:
+            print("Reading", colored(filename, "green"))
+            m = libcst.parse_module(read_file(filename))
+            serialized = serialize_dc(m)
+            walktree(serialized, f)
+        jprint(data)
+    if action == "replace":
+        data = defaultdict(int)
+
+        def f(node, path):
+            if type(node) == str:
+                for s in re.findall(regexp, node, re.I):
+                    print(path)
+                    data[s] += 1
+            return node
+
+        for filename in files:
+            print("Reading", colored(filename, "green"))
+            m = libcst.parse_module(read_file(filename))
+            serialized = serialize_dc(m)
+            walktree(serialized, f)
         jprint(data)
