@@ -31,14 +31,17 @@ def generate_variants(source, replacement):
 
 def walktree(node, f):
     if type(node) == dict:
+        result = {}
         for k, v in node.items():
-            walktree(k, f)
-            walktree(v, f)
+            result[k] = walktree(v, f)
+        return result
     elif type(node) in [list, tuple, set]:
+        result = []
         for x in node:
-            walktree(x, f)
+            result.append(walktree(x, f))
+        return type(node)(result)
     else:
-        f(node)
+        return f(node)
 
 
 results = []
@@ -65,6 +68,7 @@ if __name__ == "__main__":
             for s in re.findall(regexp, node, re.I):
                 print(s)
                 data[s] += 1
+        return node
     print("The regexp", regexp)
     if action == "list":
         data = defaultdict(int)
