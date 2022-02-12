@@ -1,3 +1,8 @@
+def read_file(filename):
+    with open(filename, 'r') as f:
+        return f.read()
+
+
 def _run(command, timeout_s=False, shell=False):
     ### run a process, capture the output and wait for it to finish. if timeout is specified then Kill the subprocess and its childrens when the timeout is reached (if parent did not detach)
     ## usage: _run(arg1, arg2, arg3)
