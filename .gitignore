@@ -1,0 +1,31 @@
+*.sqlite3*
+__pycache__/
+__MACOSX/
+.vscode/
+.DS_Store
+.sass-cache/
+documents/
+.venv/
+venv/
+*.pyc
+.eslintrc.json
+*.sublime-project
+*.sublime-workspace
+node_modules/
+.idea/
+.python-version
+Pipfile
+Pipfile.lock
+.package-lock
+yarn.lock
+package-lock.json
+docker/dev_post_migrate.py
+# Ignore JSON serivce account file
+sa-key.json
+minerva/static/css/style.css
+minerva/static/css/style.css.map
+*.log
+minerva-media/**
+# Local Settings file
+minerva/settings/environments/.local.py
+.env
