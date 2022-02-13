@@ -32,6 +32,13 @@ def generate_variants(source, replacement):
     pass
 
 
+def get_by_path(tree, path):
+    result = tree
+    for p in path:
+        result = result[p]
+    return result
+
+
 def walktree(node, f, path=None):
     if path is None:
         path = []
@@ -50,7 +57,7 @@ def walktree(node, f, path=None):
         return f(node, path)
 
 
-def copy_at_paths(tree, paths_to_visit):
+def copy_at_paths(tree, paths_to_visit, replace_fn):
     def walktree2(node, c, path=None):
         if path is None:
             path = []
@@ -73,10 +80,58 @@ def copy_at_paths(tree, paths_to_visit):
     def c(node, path):
         path2 = [p[0] for p in path]
         if path2 in paths_to_visit:
-            return [node, node]
+            #jprint(node)
+            #jprint(walktree(copy.deepcopy(node), replace_fn))
+            #raise
+            return [node, walktree(copy.deepcopy(node), replace_fn)]
         else:
             return [node]
     return walktree2(tree, c)
+
+
+def get_spellings(term):
+    options = []
+    lower = [p.lower() for p in term.split("-")]
+    upper = [p.upper() for p in lower]
+    capitalize = [p.capitalize() for p in lower]
+    capitalize_first = [capitalize[0]] + lower[1:]
+    for cased in [
+        lower,
+        upper,
+        capitalize,
+        capitalize_first,
+    ]:
+        for joint in ["", " ", "-", "_"]:
+            options.append(joint.join(cased))
+    return options
+
+def make_replace_fn(regexp, terms, replace):
+    replace_map = {}
+    replace_spellings = get_spellings(replace)
+    for term in terms:
+        replace_map.update(dict(map(
+            lambda a, b: [a, b],
+            get_spellings(term),
+            replace_spellings
+        )))
+    print("Replace map")
+    jprint(replace_map)
+    def replace_fn(value, *args, **kwargs):
+        if type(value) != str:
+            return value
+        def repl(matchobj):
+            return replace_map[matchobj.group()]
+        return re.sub(regexp, repl, value)
+    return replace_fn
+
+def make_mark_fn(regexp):
+    def mark_fn(value, *args, **kwargs):
+        if type(value) != str:
+            return value
+        def repl(matchobj):
+            return colored(matchobj.group(), "magenta", attrs=["bold"])
+        return re.sub(regexp, repl, value)
+    return mark_fn
 
 
 results = []
@@ -97,14 +152,19 @@ if __name__ == "__main__":
         parts = [re.escape(p) for p in v.split("-")]
         variants.append(r"[ \-\_]?".join(parts))
     regexp = f"({'|'.join(variants)})"
-    re.compile(regexp)
+    result_parts = [re.escape(p) for p in replace.split("-")]
+    result_regexp = r"[ \-\_]?".join(result_parts)
+    regexp = re.compile(regexp, flags=re.I)
+    # fns
+    replace_fn = make_replace_fn(regexp, terms, replace)
+    mark_fn = make_mark_fn(re.compile(result_regexp, flags=re.I))
     print("The regexp", regexp)
     if action == "list":
         data = defaultdict(int)
 
         def f(node, *args, **kwargs):
             if type(node) == str:
-                for s in re.findall(regexp, node, re.I):
+                for s in re.findall(regexp, node):
                     print(s)
                     data[s] += 1
             return node
@@ -120,7 +180,7 @@ if __name__ == "__main__":
 
         def f(node, path):
             if type(node) == str:
-                for s in re.findall(regexp, node, re.I):
+                for s in re.findall(regexp, node):
                     print(path)
                     data[s] += 1
             return node
@@ -135,7 +195,7 @@ if __name__ == "__main__":
 
         def f(node, path):
             if type(node) == str:
-                for s in re.findall(regexp, node, re.I):
+                for s in re.findall(regexp, node):
                     paths.add(tuple(path))
             return node
 
@@ -147,6 +207,7 @@ if __name__ == "__main__":
             tree = serialize_dc(m)
             walktree(tree, f)
             correct_paths = set([])
+            incorrect_paths = [] # perserve order
 
             def is_correct_position(path, i):
                 try:
@@ -155,14 +216,20 @@ if __name__ == "__main__":
                 except IndexError:
                     return False
                 #print(t1, t2)
-                if t1 == "<class 'list'>" and t2 in ["Module", "List"]:
+                if t2 in ["ClassDef"] and t1 == 'Name':
                     return True
 
             for path in paths:
+                is_correct = False
                 for i in range(len(path) - 1):
                     if is_correct_position(path, i):
-                        correct_paths.add(tuple([x[0] for x in path[:-i]]))
+                        correct_paths.add(tuple([x[0] for x in path[:-i - 2]]))
+                        is_correct = True
                         break
+                    else:
+                        path2 = path[:2]
+                        if path2 not in incorrect_paths:
+                            incorrect_paths.append(path2)
             correct_paths = sorted([list(p) for p in correct_paths], key=len)
             for i in range(len(correct_paths)):
                 for j in range(i + 1, len(correct_paths)):
@@ -170,10 +237,20 @@ if __name__ == "__main__":
                         print('Eliminate')
             #jprint(correct_paths)
             if correct_paths:
-                new_tree = copy_at_paths(tree, correct_paths)
+                new_tree = copy_at_paths(tree, correct_paths, replace_fn)
                 u = unserialize_dc(new_tree)
                 if len(u.code) == len(code):
                     cprint("The same", "grey")
                 else:
                     cprint("Different", "yellow")
                     write_file(filename, u.code)
+            if incorrect_paths:
+                for path in incorrect_paths:
+                    path = [p[0] for p in path]
+                    if path in correct_paths:
+                        continue
+                    #cprint(path, "red")
+                    path_tree = get_by_path(tree, path)
+                    path_tree = walktree(path_tree, replace_fn)
+                    cprint(path_tree['type'], "red")
+                    print(mark_fn(unserialize_dc({**tree, "body": [path_tree]}).code))
