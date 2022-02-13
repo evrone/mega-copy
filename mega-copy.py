@@ -1,25 +1,15 @@
+import os
 import re
-import json
 import copy
-from pygments import highlight, lexers, formatters
 import sys
-from fs_utils import _run, read_file, write_file
-from parser_utils import serialize_dc, unserialize_dc
-from termcolor import cprint, colored
 import glob
 import libcst
+from termcolor import cprint, colored
 from collections import defaultdict
 
-
-def jprint(d):
-    formatted_json = json.dumps(d, indent=4, default=repr)
-    colorful_json = highlight(
-        formatted_json, lexers.JsonLexer(), formatters.TerminalFormatter()
-    )
-    print(colorful_json)
-
-
-print("hello", sys.argv)
+from fs_utils import _run, read_file, write_file
+from parser_utils import serialize_dc, unserialize_dc
+from print_utils import jprint
 
 
 def generate_variants(source, replacement):
@@ -95,11 +85,13 @@ def get_spellings(term):
     upper = [p.upper() for p in lower]
     capitalize = [p.capitalize() for p in lower]
     capitalize_first = [capitalize[0]] + lower[1:]
+    capitalize_rest = [lower[0]] + capitalize[1:]
     for cased in [
         lower,
         upper,
         capitalize,
         capitalize_first,
+        capitalize_rest, # camelCase ?
     ]:
         for joint in ["", " ", "-", "_"]:
             options.append(joint.join(cased))
@@ -142,9 +134,18 @@ if __name__ == "__main__":
         cprint("Error: Git isn't clean, can't perform work\n", "red")
         sys.exit(1)
     files = glob.glob("**/*.py")
+    subaction = None
     action = sys.argv[1]
-    terms = sys.argv[2:-1]
-    replace = sys.argv[-1]
+    if "-" in action:
+        action, subaction = action.split("-")
+    file_arg = None
+    if action == "file": # has filename arg in the end
+        terms = sys.argv[2:-2]
+        replace = sys.argv[-2]
+        file_arg = sys.argv[-1]
+    else:
+        terms = sys.argv[2:-1]
+        replace = sys.argv[-1]
     print(f"Will try replace {', '.join(terms)} by {replace} in files above")
     data = None
     variants = []
@@ -254,3 +255,22 @@ if __name__ == "__main__":
                     path_tree = walktree(path_tree, replace_fn)
                     cprint(path_tree['type'], "red")
                     print(mark_fn(unserialize_dc({**tree, "body": [path_tree]}).code))
+    if action == "file":
+        if os.path.isfile(file_arg):
+            files = [file_arg]
+        elif os.path.isdir(file_arg):
+            os.chdir(file_arg)
+            files = glob.glob("**/*")
+        else:
+            raise NotImplementedError()
+        for file in files:
+            replaced = replace_fn(file) # TODO: check if it's a _dir_ that has a pattern
+            if replaced != file: # filename itself contains characters
+                print("Copying", colored(file, "blue"))
+            else:
+                code = read_file(file)
+                if replace_fn(code) != code:
+                    print("Reading", colored(file, "green"))
+                else:
+                    print("Skipping", colored(file, "grey"))
+            #print(mark_fn(replace_fn(code)))
