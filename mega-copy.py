@@ -129,17 +129,18 @@ def make_mark_fn(regexp):
 results = []
 
 if __name__ == "__main__":
-    a = _run(r"git status --porcelain", 3)
-    if len(a[1]):
-        cprint("Error: Git isn't clean, can't perform work\n", "red")
-        sys.exit(1)
+    action = sys.argv[1]
+    if action not in ["show", "file-show"]:
+        a = _run(r"git status --porcelain", 3)
+        if len(a[1]):
+            cprint("Error: Git isn't clean, can't perform work\n", "red")
+            sys.exit(1)
     files = glob.glob("**/*.py", recursive=True)
     subaction = None
-    action = sys.argv[1]
     if "-" in action:
         action, subaction = action.split("-")
     file_arg = None
-    if action == "file": # has filename arg in the end
+    if (action == "file") or (action == "ren" and subaction == "file"): # has filename arg in the end
         terms = sys.argv[2:-2]
         replace = sys.argv[-2]
         file_arg = sys.argv[-1]
@@ -256,7 +257,34 @@ if __name__ == "__main__":
                     cprint(path_tree['type'], "red")
                     print(mark_fn(unserialize_dc({**tree, "body": [path_tree]}).code))
     if action == "ren":
+        def f(node, path):
+            if type(node) == str:
+                for s in re.findall(regexp, node):
+                    paths.add(tuple(path))
+            return node
 
+        if subaction == "file":
+            files = [file_arg]
+
+        for filename in files:
+            if "/node_modules/" in filename:
+                continue
+            if "/migrations/" in filename:
+                continue
+            paths = set([])
+            print("Reading", colored(filename, "green"))
+            code = read_file(filename)
+            m = libcst.parse_module(code)
+            tree = serialize_dc(m)
+
+            new_tree = walktree(tree, replace_fn)
+            u = unserialize_dc(new_tree)
+            if len(u.code) == len(code):
+                cprint("The same", "grey")
+            else:
+                cprint("Different", "yellow")
+                write_file(filename, u.code)
+    if action == "show":
         def f(node, path):
             if type(node) == str:
                 for s in re.findall(regexp, node):
@@ -264,30 +292,42 @@ if __name__ == "__main__":
             return node
 
         for filename in files:
+            if "/node_modules/" in filename:
+                continue
+            if "/migrations/" in filename:
+                continue
             paths = set([])
             print("Reading", colored(filename, "green"))
             code = read_file(filename)
             m = libcst.parse_module(code)
             tree = serialize_dc(m)
 
-            new_tree = walktree(tree, correct_paths, replace_fn)
+            new_tree = walktree(tree, replace_fn)
             u = unserialize_dc(new_tree)
             if len(u.code) == len(code):
                 cprint("The same", "grey")
             else:
                 cprint("Different", "yellow")
-                write_file(filename, u.code)
-    if action == "file":
+                print(mark_fn(u.code))
+    if action == "file" and subaction == "copy":
         if os.path.isfile(file_arg):
             files = [file_arg]
         elif os.path.isdir(file_arg):
             os.chdir(file_arg)
-            files = glob.glob("**/*")
+            files = glob.glob("**/*", recursive=True)
         else:
             raise NotImplementedError()
         for file in files:
+            if "node_modules/" in file:
+                continue
+            if os.path.is_dir(file):
+                continue
             replaced = replace_fn(file) # TODO: check if it's a _dir_ that has a pattern
-            code = read_file(file)
+            try:
+                code = read_file(file)
+            except Exception as e:
+                print("Can't read", colored(file, "yellow"))
+                continue
             new_code = replace_fn(code)
             if replaced != file: # filename itself contains characters
                 print("Copying", colored(file, "blue"))
@@ -299,3 +339,57 @@ if __name__ == "__main__":
                 else:
                     print("Skipping", colored(file, "grey"))
             #print(mark_fn(replace_fn(code)))
+    if action == "file" and subaction == "ren":
+        if os.path.isfile(file_arg):
+            files = [file_arg]
+        elif os.path.isdir(file_arg):
+            os.chdir(file_arg)
+            files = glob.glob("**/*", recursive=True)
+        else:
+            raise NotImplementedError()
+        for file in files:
+            if "node_modules/" in file:
+                continue
+            if os.path.isdir(file):
+                continue
+            if file.lower().endswith(".py"):
+                continue
+            replaced = replace_fn(file) # TODO: rename the file also? the dirs etc?
+            try:
+                code = read_file(file)
+            except Exception as e:
+                print("Can't read", colored(file, "yellow"))
+                continue
+            new_code = replace_fn(code)
+            if new_code != code:
+                print("Updating", colored(file, "blue"))
+                write_file(replaced, new_code)
+            else:
+                print("Skipping", colored(file, "grey"))
+    if action == "file" and subaction == "show":
+        if os.path.isfile(file_arg):
+            files = [file_arg]
+        elif os.path.isdir(file_arg):
+            os.chdir(file_arg)
+            files = glob.glob("**/*", recursive=True)
+        else:
+            raise NotImplementedError()
+        for file in files:
+            if "node_modules/" in file:
+                continue
+            if os.path.isdir(file):
+                continue
+            if file.lower().endswith(".py"):
+                continue
+            replaced = replace_fn(file) # TODO: rename the file also? the dirs etc?
+            try:
+                code = read_file(file)
+            except Exception as e:
+                print("Can't read", colored(file, "yellow"))
+                continue
+            new_code = replace_fn(code)
+            if new_code != code:
+                print("Updating", colored(file, "blue"))
+                print(mark_fn(new_code))
+            else:
+                print("Skipping", colored(file, "grey"))
