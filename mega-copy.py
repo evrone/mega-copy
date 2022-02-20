@@ -279,7 +279,7 @@ if __name__ == "__main__":
 
             new_tree = walktree(tree, replace_fn)
             u = unserialize_dc(new_tree)
-            if len(u.code) == len(code):
+            if u.code == code:
                 cprint("The same", "grey")
             else:
                 cprint("Different", "yellow")
