@@ -99,13 +99,21 @@ def get_spellings(term):
 
 def make_replace_fn(regexp, terms, replace):
     replace_map = {}
-    replace_spellings = get_spellings(replace)
-    for term in terms:
-        replace_map.update(dict(map(
-            lambda a, b: [a, b],
-            get_spellings(term),
-            replace_spellings
-        )))
+    if len(terms) > 1:
+        replace_spellings = get_spellings(replace)
+        for term in terms:
+            replace_map.update(dict(map(
+                lambda a, b: [a, b],
+                get_spellings(term),
+                replace_spellings
+            )))
+    else:
+        term = terms[0]
+        replace_map = {
+            term.lower(): "_".join([w.lower() for w in replace])
+            term.lower().capitalize(): "".join([w.lower().capitalize() for w in replace])
+            term.upper(): "_".join([w.upper() for w in replace])
+        }
     print("Replace map")
     jprint(replace_map)
     def replace_fn(value, *args, **kwargs):
@@ -304,7 +312,7 @@ if __name__ == "__main__":
 
             new_tree = walktree(tree, replace_fn)
             u = unserialize_dc(new_tree)
-            if len(u.code) == len(code):
+            if u.code == code:
                 cprint("The same", "grey")
             else:
                 cprint("Different", "yellow")
