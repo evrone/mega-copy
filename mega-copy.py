@@ -99,7 +99,7 @@ def get_spellings(term):
 
 def make_replace_fn(regexp, terms, replace):
     replace_map = {}
-    if len(terms) > 1:
+    if terms and len(terms[0].split("-")) > 1:
         replace_spellings = get_spellings(replace)
         for term in terms:
             replace_map.update(dict(map(
@@ -108,11 +108,12 @@ def make_replace_fn(regexp, terms, replace):
                 replace_spellings
             )))
     else:
-        term = terms[0]
+        t = terms[0]
+        r = replace.split("-")
         replace_map = {
-            term.lower(): "_".join([w.lower() for w in replace])
-            term.lower().capitalize(): "".join([w.lower().capitalize() for w in replace])
-            term.upper(): "_".join([w.upper() for w in replace])
+            t.lower(): "_".join([w.lower() for w in r]),
+            t.lower().capitalize(): "".join([w.lower().capitalize() for w in r]),
+            t.upper(): "_".join([w.upper() for w in r]),
         }
     print("Replace map")
     jprint(replace_map)
