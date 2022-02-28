@@ -211,6 +211,10 @@ if __name__ == "__main__":
             return node
 
         for filename in files:
+            if "/node_modules/" in filename:
+                continue
+            if "/migrations/" in filename:
+                continue
             paths = set([])
             print("Reading", colored(filename, "green"))
             code = read_file(filename)
