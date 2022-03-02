@@ -315,12 +315,19 @@ if __name__ == "__main__":
             m = libcst.parse_module(code)
             tree = serialize_dc(m)
 
-            new_tree = walktree(tree, replace_fn)
-            u = unserialize_dc(new_tree)
-            if u.code == code:
+            make_tree = lambda body: {**tree, "body": body}
+            new_tree = make_tree([])
+            changed = False
+            for item in tree["body"]:
+                new_item = walktree(item, replace_fn)
+                if unserialize_dc(make_tree([item])).code != unserialize_dc(make_tree([new_item])).code:
+                    new_tree["body"].append(new_item)
+                    changed = True
+            if not changed:
                 cprint("The same", "grey")
             else:
                 cprint("Different", "yellow")
+                u = unserialize_dc(new_tree)
                 print(mark_fn(u.code))
     if action == "file" and subaction == "copy":
         if os.path.isfile(file_arg):
