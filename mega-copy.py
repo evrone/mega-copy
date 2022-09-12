@@ -81,7 +81,7 @@ def copy_at_paths(tree, paths_to_visit, replace_fn):
 
 def get_spellings(term):
     options = []
-    lower = [p.lower() for p in term.split("-")]
+    lower = [p.lower() for p in term.replace("_", "-").split("-")]
     upper = [p.upper() for p in lower]
     capitalize = [p.capitalize() for p in lower]
     capitalize_first = [capitalize[0]] + lower[1:]
@@ -139,7 +139,7 @@ results = []
 
 if __name__ == "__main__":
     action = sys.argv[1]
-    if action not in ["show", "file-show"]:
+    if action not in ["show", "file-show", "files-show", "show-file", "show-files"]:
         a = _run(r"git status --porcelain", 3)
         if len(a[1]):
             cprint("Error: Git isn't clean, can't perform work\n", "red")
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     if "-" in action:
         action, subaction = action.split("-")
     file_arg = None
-    if (action == "file") or (action == "ren" and subaction == "file"): # has filename arg in the end
+    if (action == "file") or subaction == "file": # has filename arg in the end
         terms = sys.argv[2:-2]
         replace = sys.argv[-2]
         file_arg = sys.argv[-1]
@@ -304,6 +304,9 @@ if __name__ == "__main__":
                     paths.add(tuple(path))
             return node
 
+        if subaction == "file":
+            files = [file_arg]
+
         for filename in files:
             if "/node_modules/" in filename:
                 continue
@@ -386,14 +389,15 @@ if __name__ == "__main__":
                 write_file(replaced, new_code)
             else:
                 print("Skipping", colored(file, "grey"))
-    if action == "file" and subaction == "show":
-        if os.path.isfile(file_arg):
-            files = [file_arg]
-        elif os.path.isdir(file_arg):
-            os.chdir(file_arg)
-            files = glob.glob("**/*", recursive=True)
-        else:
-            raise NotImplementedError()
+    if action in ["file", "files"] and subaction == "show":
+        if action == "file":
+            if os.path.isfile(file_arg):
+                files = [file_arg]
+            elif os.path.isdir(file_arg):
+                os.chdir(file_arg)
+                files = glob.glob("**/*", recursive=True)
+            else:
+                raise NotImplementedError()
         for file in files:
             if "node_modules/" in file:
                 continue
