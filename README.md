@@ -8,8 +8,8 @@ It works with:
 1. Python files in "special" (Python-language specific) mode
 2. "Other" files in "simple" (format-agnostic) mode
 
-Installation
-============
+Installation & Usage
+====================
 
 1. Clone this repo:
 
