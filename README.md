@@ -19,7 +19,8 @@ git clone https://github.com/andrewboltachev/mega-copy.git
 
 2. Create a helper script to run the tool (e.g. `~/bin/mega-copy.sh`):
 ```
-mkvirtualenv # (or venv)
+mkvirtualenv mega-copy # (or use venv)
+pip install -r requirements.txt
 ```
 ```bash
 /home/andrey/.virtualenvs/mega-copy/bin/python /home/myuser/mega-copy/mega-copy.py $@
