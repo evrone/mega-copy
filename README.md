@@ -58,6 +58,6 @@ The tool will generate the following "replace map" (taking into account all poss
 }
 ```
 
-and below show all code expressions affected by it in code (your current directory)
+and below **show** all code expressions affected by it in code (your current directory)
 
 Instead of `show` you can then use another command — `ren`, to rename all occurencies in the code in-place
