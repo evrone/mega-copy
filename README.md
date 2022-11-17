@@ -1,7 +1,7 @@
 mega-copy
 =========
 
-This is a tool that helps to copy code in bulk. Useful when developing similar features
+This is a tool that helps to edit/refactor code in bulk. Useful when developing few similar features in your system
 
 It works with:
 
