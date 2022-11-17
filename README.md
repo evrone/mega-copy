@@ -17,11 +17,12 @@ Installation
 git clone https://github.com/andrewboltachev/mega-copy.git
 ```
 
-2. Create a helper script to run the tool (e.g. `~/bin/mega-copy.sh`):
+2. Create virtual environment:
 ```
 mkvirtualenv mega-copy # (or use venv)
 pip install -r requirements.txt
 ```
+and a helper script to run the tool (e.g. `~/bin/mega-copy.sh`):
 ```bash
 /home/andrey/.virtualenvs/mega-copy/bin/python /home/myuser/mega-copy/mega-copy.py $@
 ```
