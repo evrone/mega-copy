@@ -215,6 +215,10 @@ if __name__ == "__main__":
                 continue
             if "/migrations/" in filename:
                 continue
+            if "/venv/" in filename:
+                continue
+            if "/.venv/" in filename:
+                continue
             paths = set([])
             print("Reading", colored(filename, "green"))
             code = read_file(filename)
@@ -284,6 +288,10 @@ if __name__ == "__main__":
                 continue
             if "/migrations/" in filename:
                 continue
+            if "/venv/" in filename:
+                continue
+            if "/.venv/" in filename:
+                continue
             paths = set([])
             print("Reading", colored(filename, "green"))
             code = read_file(filename)
@@ -311,6 +319,10 @@ if __name__ == "__main__":
             if "/node_modules/" in filename:
                 continue
             if "/migrations/" in filename:
+                continue
+            if "/venv/" in filename:
+                continue
+            if "/.venv/" in filename:
                 continue
             paths = set([])
             print("Reading", colored(filename, "green"))
