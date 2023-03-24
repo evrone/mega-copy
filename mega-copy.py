@@ -219,6 +219,8 @@ if __name__ == "__main__":
                 continue
             if "/.venv/" in filename:
                 continue
+            if filename.startswith("venv/") or filename.startswith(".venv/"):
+                continue
             paths = set([])
             print("Reading", colored(filename, "green"))
             code = read_file(filename)
@@ -292,6 +294,8 @@ if __name__ == "__main__":
                 continue
             if "/.venv/" in filename:
                 continue
+            if filename.startswith("venv/") or filename.startswith(".venv/"):
+                continue
             paths = set([])
             print("Reading", colored(filename, "green"))
             code = read_file(filename)
@@ -323,6 +327,8 @@ if __name__ == "__main__":
             if "/venv/" in filename:
                 continue
             if "/.venv/" in filename:
+                continue
+            if filename.startswith("venv/") or filename.startswith(".venv/"):
                 continue
             paths = set([])
             print("Reading", colored(filename, "green"))
