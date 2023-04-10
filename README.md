@@ -1,5 +1,4 @@
-mega-copy
-=========
+# mega-copy
 
 This is a tool that helps to edit/refactor code in bulk. Useful when developing few similar features in your system
 
@@ -8,8 +7,7 @@ It works with:
 1. Python files in "special" (Python-language specific) mode
 2. "Other" files in "simple" (format-agnostic) mode
 
-Installation & Usage
-====================
+# Installation & Usage
 
 1. Clone this repo:
 
@@ -18,21 +16,26 @@ git clone https://github.com/andrewboltachev/mega-copy.git
 ```
 
 2. Create virtual environment:
+
 ```
 mkvirtualenv mega-copy # (or use venv)
 pip install -r requirements.txt
 ```
+
 and a helper script to run the tool (e.g. `~/bin/mega-copy.sh`):
+
 ```bash
 /home/andrey/.virtualenvs/mega-copy/bin/python /home/myuser/mega-copy/mega-copy.py $@
 ```
 
 2. Suppose you want to refactor your Python code, replacing something called "property sale" to something else named "sales order". Run:
+
 ```
 > mega.copy.sh show property-sale sales-order
 ```
 
 The tool will generate the following "replace map" (taking into account all possible spellings):
+
 ```python
 {
     "propertysale": "salesorder",
@@ -61,3 +64,16 @@ The tool will generate the following "replace map" (taking into account all poss
 and below **show** all code expressions affected by it in code (your current directory)
 
 Instead of `show` you can then use another command — `ren`, to rename all occurencies in the code in-place
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Sponsors
+
+Visit [Evrone](https://evrone.com/) website to get more information about the [projects](https://evrone.com/cases) build.
+
+<a href="https://evrone.com/?utm_source=postcss-px-to-viewport">
+  <img src="https://user-images.githubusercontent.com/417688/34437029-dbfe4ee6-ecab-11e7-9d80-2b274b4149b3.png"
+       alt="Sponsored by Evrone" width="231" />
+</a>
