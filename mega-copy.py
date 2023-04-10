@@ -70,12 +70,13 @@ def copy_at_paths(tree, paths_to_visit, replace_fn):
     def c(node, path):
         path2 = [p[0] for p in path]
         if path2 in paths_to_visit:
-            #jprint(node)
-            #jprint(walktree(copy.deepcopy(node), replace_fn))
-            #raise
+            # jprint(node)
+            # jprint(walktree(copy.deepcopy(node), replace_fn))
+            # raise
             return [node, walktree(copy.deepcopy(node), replace_fn)]
         else:
             return [node]
+
     return walktree2(tree, c)
 
 
@@ -91,22 +92,21 @@ def get_spellings(term):
         upper,
         capitalize,
         capitalize_first,
-        capitalize_rest, # camelCase ?
+        capitalize_rest,  # camelCase ?
     ]:
         for joint in ["", " ", "-", "_"]:
             options.append(joint.join(cased))
     return options
+
 
 def make_replace_fn(regexp, terms, replace):
     replace_map = {}
     if terms and len(terms[0].split("-")) > 1:
         replace_spellings = get_spellings(replace)
         for term in terms:
-            replace_map.update(dict(map(
-                lambda a, b: [a, b],
-                get_spellings(term),
-                replace_spellings
-            )))
+            replace_map.update(
+                dict(map(lambda a, b: [a, b], get_spellings(term), replace_spellings))
+            )
     else:
         t = terms[0]
         r = replace.split("-")
@@ -117,21 +117,29 @@ def make_replace_fn(regexp, terms, replace):
         }
     print("Replace map")
     jprint(replace_map)
+
     def replace_fn(value, *args, **kwargs):
         if type(value) != str:
             return value
+
         def repl(matchobj):
             return replace_map[matchobj.group()]
+
         return re.sub(regexp, repl, value)
+
     return replace_fn
+
 
 def make_mark_fn(regexp):
     def mark_fn(value, *args, **kwargs):
         if type(value) != str:
             return value
+
         def repl(matchobj):
             return colored(matchobj.group(), "magenta", attrs=["bold"])
+
         return re.sub(regexp, repl, value)
+
     return mark_fn
 
 
@@ -149,7 +157,7 @@ if __name__ == "__main__":
     if "-" in action:
         action, subaction = action.split("-")
     file_arg = None
-    if (action == "file") or subaction == "file": # has filename arg in the end
+    if (action == "file") or subaction == "file":  # has filename arg in the end
         terms = sys.argv[2:-2]
         replace = sys.argv[-2]
         file_arg = sys.argv[-1]
@@ -228,7 +236,7 @@ if __name__ == "__main__":
             tree = serialize_dc(m)
             walktree(tree, f)
             correct_paths = set([])
-            incorrect_paths = [] # perserve order
+            incorrect_paths = []  # perserve order
 
             def is_correct_position(path, i):
                 try:
@@ -236,15 +244,15 @@ if __name__ == "__main__":
                     v2, t2 = path[-1 * (i + 1) - 1]
                 except IndexError:
                     return False
-                #print(t1, t2)
-                if t2 in ["ClassDef"] and t1 == 'Name':
+                # print(t1, t2)
+                if t2 in ["ClassDef"] and t1 == "Name":
                     return True
 
             for path in paths:
                 is_correct = False
                 for i in range(len(path) - 1):
                     if is_correct_position(path, i):
-                        correct_paths.add(tuple([x[0] for x in path[:-i - 2]]))
+                        correct_paths.add(tuple([x[0] for x in path[: -i - 2]]))
                         is_correct = True
                         break
                     else:
@@ -254,9 +262,15 @@ if __name__ == "__main__":
             correct_paths = sorted([list(p) for p in correct_paths], key=len)
             for i in range(len(correct_paths)):
                 for j in range(i + 1, len(correct_paths)):
-                    if all(map(lambda a, b: a == b, correct_paths[i], correct_paths[j][:len(correct_paths[i])])):
-                        print('Eliminate')
-            #jprint(correct_paths)
+                    if all(
+                        map(
+                            lambda a, b: a == b,
+                            correct_paths[i],
+                            correct_paths[j][: len(correct_paths[i])],
+                        )
+                    ):
+                        print("Eliminate")
+            # jprint(correct_paths)
             if correct_paths:
                 new_tree = copy_at_paths(tree, correct_paths, replace_fn)
                 u = unserialize_dc(new_tree)
@@ -270,12 +284,13 @@ if __name__ == "__main__":
                     path = [p[0] for p in path]
                     if path in correct_paths:
                         continue
-                    #cprint(path, "red")
+                    # cprint(path, "red")
                     path_tree = get_by_path(tree, path)
                     path_tree = walktree(path_tree, replace_fn)
-                    cprint(path_tree['type'], "red")
+                    cprint(path_tree["type"], "red")
                     print(mark_fn(unserialize_dc({**tree, "body": [path_tree]}).code))
     if action == "ren":
+
         def f(node, path):
             if type(node) == str:
                 for s in re.findall(regexp, node):
@@ -310,6 +325,7 @@ if __name__ == "__main__":
                 cprint("Different", "yellow")
                 write_file(filename, u.code)
     if action == "show":
+
         def f(node, path):
             if type(node) == str:
                 for s in re.findall(regexp, node):
@@ -341,7 +357,10 @@ if __name__ == "__main__":
             changed = False
             for item in tree["body"]:
                 new_item = walktree(item, replace_fn)
-                if unserialize_dc(make_tree([item])).code != unserialize_dc(make_tree([new_item])).code:
+                if (
+                    unserialize_dc(make_tree([item])).code
+                    != unserialize_dc(make_tree([new_item])).code
+                ):
                     new_tree["body"].append(new_item)
                     changed = True
             if not changed:
@@ -363,14 +382,16 @@ if __name__ == "__main__":
                 continue
             if os.path.is_dir(file):
                 continue
-            replaced = replace_fn(file) # TODO: check if it's a _dir_ that has a pattern
+            replaced = replace_fn(
+                file
+            )  # TODO: check if it's a _dir_ that has a pattern
             try:
                 code = read_file(file)
             except Exception as e:
                 print("Can't read", colored(file, "yellow"))
                 continue
             new_code = replace_fn(code)
-            if replaced != file: # filename itself contains characters
+            if replaced != file:  # filename itself contains characters
                 print("Copying", colored(file, "blue"))
                 write_file(replaced, new_code)
             else:
@@ -379,7 +400,7 @@ if __name__ == "__main__":
                     print(mark_fn(new_code))
                 else:
                     print("Skipping", colored(file, "grey"))
-            #print(mark_fn(replace_fn(code)))
+            # print(mark_fn(replace_fn(code)))
     if action == "file" and subaction == "ren":
         if os.path.isfile(file_arg):
             files = [file_arg]
@@ -395,7 +416,7 @@ if __name__ == "__main__":
                 continue
             if file.lower().endswith(".py"):
                 continue
-            replaced = replace_fn(file) # TODO: rename the file also? the dirs etc?
+            replaced = replace_fn(file)  # TODO: rename the file also? the dirs etc?
             try:
                 code = read_file(file)
             except Exception as e:
@@ -423,7 +444,7 @@ if __name__ == "__main__":
                 continue
             if file.lower().endswith(".py"):
                 continue
-            replaced = replace_fn(file) # TODO: rename the file also? the dirs etc?
+            replaced = replace_fn(file)  # TODO: rename the file also? the dirs etc?
             try:
                 code = read_file(file)
             except Exception as e:

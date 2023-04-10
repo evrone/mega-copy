@@ -1,15 +1,19 @@
 import copy
 from dataclasses import _is_dataclass_instance, fields
 
-dict_factory = lambda d: {f"{k}_param" if k == "type" else k: v for k, v in dict(d).items()}
+dict_factory = lambda d: {
+    f"{k}_param" if k == "type" else k: v for k, v in dict(d).items()
+}
+
+
 def serialize_dc(obj, *args):
     if _is_dataclass_instance(obj):
         result = []
         for f in fields(obj):
             value = serialize_dc(getattr(obj, f.name), dict_factory)
             result.append((f.name, value))
-        return {**dict_factory(result), 'type': obj.__class__.__name__}
-    elif isinstance(obj, tuple) and hasattr(obj, '_fields'):
+        return {**dict_factory(result), "type": obj.__class__.__name__}
+    elif isinstance(obj, tuple) and hasattr(obj, "_fields"):
         # obj is a namedtuple.  Recurse into it, but the returned
         # object is another namedtuple of the same type.  This is
         # similar to how other list- or tuple-derived classes are
@@ -36,9 +40,10 @@ def serialize_dc(obj, *args):
         # above).
         return type(obj)(serialize_dc(v, dict_factory) for v in obj)
     elif isinstance(obj, dict):
-        return type(obj)((serialize_dc(k, dict_factory),
-                        serialize_dc(v, dict_factory))
-                        for k, v in obj.items())
+        return type(obj)(
+            (serialize_dc(k, dict_factory), serialize_dc(v, dict_factory))
+            for k, v in obj.items()
+        )
     else:
         return copy.deepcopy(obj)
 
@@ -49,19 +54,24 @@ def node_class(name):
 
 def unserialize_dc(s, k=None):
     from libcst import MaybeSentinel
+
     if s == "MaybeSentinel.DEFAULT":
         return MaybeSentinel.DEFAULT
     if type(s) == list:
         s = [unserialize_dc(x) for x in s]
-        if k in ['lpar', 'rpar']:
+        if k in ["lpar", "rpar"]:
             s = tuple(s)
         return s
     if type(s) == tuple:
         return tuple([unserialize_dc(x) for x in list(s)])
-    if type(s) != dict or not 'type' in s:
+    if type(s) != dict or not "type" in s:
         return s
-    args = {"type" if k == "type_param" else k: unserialize_dc(v, k) for k, v in s.items() if k != "type"}
-    klass = node_class(s['type'])
+    args = {
+        "type" if k == "type_param" else k: unserialize_dc(v, k)
+        for k, v in s.items()
+        if k != "type"
+    }
+    klass = node_class(s["type"])
     try:
         return klass(**args)
     except Exception as e:
