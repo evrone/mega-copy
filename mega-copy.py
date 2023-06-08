@@ -147,7 +147,7 @@ results = []
 
 if __name__ == "__main__":
     action = sys.argv[1]
-    if action not in ["show", "file-show", "files-show", "show-file", "show-files"]:
+    if "show" not in action:
         a = _run(r"git status --porcelain", 3)
         if len(a[1]):
             cprint("Error: Git isn't clean, can't perform work\n", "red")
@@ -210,7 +210,7 @@ if __name__ == "__main__":
             serialized = serialize_dc(m)
             walktree(serialized, f)
         jprint(data)
-    if action == "copy":
+    if action == "pycopy":
 
         def f(node, path):
             if type(node) == str:
@@ -289,7 +289,7 @@ if __name__ == "__main__":
                     path_tree = walktree(path_tree, replace_fn)
                     cprint(path_tree["type"], "red")
                     print(mark_fn(unserialize_dc({**tree, "body": [path_tree]}).code))
-    if action == "ren":
+    if action == "pyren":
 
         def f(node, path):
             if type(node) == str:
@@ -324,7 +324,7 @@ if __name__ == "__main__":
             else:
                 cprint("Different", "yellow")
                 write_file(filename, u.code)
-    if action == "show":
+    if action == "pyshow":
 
         def f(node, path):
             if type(node) == str:
@@ -369,7 +369,7 @@ if __name__ == "__main__":
                 cprint("Different", "yellow")
                 u = unserialize_dc(new_tree)
                 print(mark_fn(u.code))
-    if action == "file" and subaction == "copy":
+    if action == "text" and subaction == "copy":
         if os.path.isfile(file_arg):
             files = [file_arg]
         elif os.path.isdir(file_arg):
