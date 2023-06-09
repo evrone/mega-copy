@@ -31,7 +31,7 @@ and a helper script to run the tool (e.g. `~/bin/mega-copy.sh`):
 2. Suppose you want to refactor your Python code, replacing something called "property sale" to something else named "sales order". Run:
 
 ```
-> mega.copy.sh show property-sale sales-order
+> mega.copy.sh pyshow property-sale sales-order
 ```
 
 The tool will generate the following "replace map" (taking into account all possible spellings):
@@ -61,9 +61,9 @@ The tool will generate the following "replace map" (taking into account all poss
 }
 ```
 
-and below **show** all code expressions affected by it in code (your current directory)
+and below **show** all **Python** code expressions affected by it in code (your current directory)
 
-Instead of `show` you can then use another command — `ren`, to rename all occurencies in the code in-place
+Instead of `pyshow` you can then use another command — `pyren`, to rename all occurencies in the code in-place
 
 ## License
 
